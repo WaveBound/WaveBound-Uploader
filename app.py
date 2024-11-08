@@ -35,6 +35,8 @@ def upload_to_github():
         # Check if the folder already exists
         try:
             repo.get_contents(REPO_PATH)
+            # If folder exists, skip uploading and return a message
+            return jsonify({"error": "Folder already exists, skipping upload."}), 409
         except github.GithubException as e:
             if e.status == 404:  # Folder does not exist
                 # Create the folder (by creating a dummy file)
@@ -46,6 +48,7 @@ def upload_to_github():
             else:
                 raise e
         
+        # Since we skip uploading if the folder exists, the following code will not run
         # Check if file already exists
         try:
             repo.get_contents(f"{REPO_PATH}{filename}")
