@@ -32,13 +32,22 @@ def upload_to_github():
         g = github.Github(GITHUB_TOKEN)
         repo = g.get_repo(f"{REPO_OWNER}/{REPO_NAME}")
 
-        # Check if folder already exists by attempting to list its contents
+        # Check if folder exists by attempting to list its contents
+        folder_exists = False
         try:
-            repo.get_contents(REPO_PATH)
-            return jsonify({"error": "Folder already exists. Upload skipped."}), 409
+            contents = repo.get_contents(REPO_PATH)
+            folder_exists = True
         except github.GithubException as e:
-            if e.status != 404:  # If error is not "folder not found"
-                raise e
+            if e.status == 404:  # Folder does not exist
+                folder_exists = False
+            else:
+                # Log the exact error if it's not a 404
+                print(f"Error checking folder existence: {e}")
+                return jsonify({"error": "Error accessing GitHub"}), 500
+
+        # If folder exists, skip upload
+        if folder_exists:
+            return jsonify({"error": "Folder already exists. Upload skipped."}), 409
 
         # Prepare file content
         content = base64.b64decode(file_data['content'])
@@ -53,6 +62,7 @@ def upload_to_github():
         return jsonify({"success": True, "message": f"Uploaded {filename}"}), 200
 
     except Exception as e:
+        print(f"Unhandled error: {e}")
         return jsonify({"error": str(e)}), 500
 
 @app.route('/')
