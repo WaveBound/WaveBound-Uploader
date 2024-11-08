@@ -23,12 +23,16 @@ def upload_to_github():
         if not all(key in file_data for key in ['filename', 'content']):
             return jsonify({"error": "Missing required fields"}), 400
         
+        # Check if file is JSON
+        filename = file_data['filename']
+        if not filename.lower().endswith('.json'):
+            return jsonify({"error": "Only JSON files are allowed"}), 400
+        
         # Initialize GitHub connection
         g = github.Github(GITHUB_TOKEN)
         repo = g.get_repo(f"{REPO_OWNER}/{REPO_NAME}")
         
         # Prepare file content
-        filename = file_data['filename']
         content = base64.b64decode(file_data['content'])
         
         # Upload to GitHub
