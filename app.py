@@ -27,27 +27,16 @@ def upload_to_github():
         filename = file_data['filename']
         if not filename.lower().endswith('.json'):
             return jsonify({"error": "Only JSON files are allowed"}), 400
+
         # Initialize GitHub connection
         g = github.Github(GITHUB_TOKEN)
         repo = g.get_repo(f"{REPO_OWNER}/{REPO_NAME}")
 
-        # Get existing folders in the repository
         # Check if file already exists
         try:
-            existing_contents = repo.get_contents(REPO_PATH)
-            existing_folders = [content.name for content in existing_contents if content.type == 'dir']
             repo.get_contents(f"{REPO_PATH}{filename}")
             return jsonify({"error": "File Name Taken, Rename To Upload"}), 409
         except github.GithubException as e:
-            existing_folders = []
-        # Extract folder name from filename (assuming filename includes full path)
-        folder_name = os.path.dirname(file_data['filename'])
-        # Check if folder already exists
-        if folder_name in existing_folders:
-            return jsonify({
-                "error": "Folder already exists", 
-                "message": "The folder already exists on GitHub. Skipping upload."
-            }), 409
             if e.status != 404:  # If error is not "file not found"
                 raise e
         
@@ -56,14 +45,11 @@ def upload_to_github():
 
         # Upload to GitHub
         repo.create_file(
-            path=f"{REPO_PATH}{file_data['filename']}", 
-            message=f"Upload {file_data['filename']}", 
             path=f"{REPO_PATH}{filename}", 
             message=f"Upload {filename}", 
             content=content
         )
 
-        return jsonify({"success": True, "message": f"Uploaded {file_data['filename']}"}), 200
         return jsonify({"success": True, "message": f"Uploaded {filename}"}), 200
 
     except Exception as e:
