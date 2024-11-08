@@ -32,20 +32,6 @@ def upload_to_github():
         g = github.Github(GITHUB_TOKEN)
         repo = g.get_repo(f"{REPO_OWNER}/{REPO_NAME}")
 
-        # Check if the folder already exists
-        try:
-            repo.get_contents(REPO_PATH)
-        except github.GithubException as e:
-            if e.status == 404:  # Folder does not exist
-                # Create the folder (by creating a dummy file)
-                repo.create_file(
-                    path=f"{REPO_PATH}.keep", 
-                    message="Create folder for Configs", 
-                    content=""
-                )
-            else:
-                raise e
-        
         # Check if file already exists
         try:
             repo.get_contents(f"{REPO_PATH}{filename}")
@@ -53,7 +39,7 @@ def upload_to_github():
         except github.GithubException as e:
             if e.status != 404:  # If error is not "file not found"
                 raise e
-
+        
         # Prepare file content
         content = base64.b64decode(file_data['content'])
 
