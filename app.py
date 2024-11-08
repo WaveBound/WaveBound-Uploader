@@ -11,7 +11,7 @@ CORS(app)
 GITHUB_TOKEN = os.environ.get('GITHUB_TOKEN')
 REPO_OWNER = "WaveBound"
 REPO_NAME = "WaveBound_Configs"
-REPO_PATH = "Configs/"  # This is the folder where files will be uploaded
+REPO_PATH = "Configs/"
 
 @app.route('/upload', methods=['POST'])
 def upload_to_github():
@@ -27,42 +27,43 @@ def upload_to_github():
         filename = file_data['filename']
         if not filename.lower().endswith('.json'):
             return jsonify({"error": "Only JSON files are allowed"}), 400
-
         # Initialize GitHub connection
         g = github.Github(GITHUB_TOKEN)
         repo = g.get_repo(f"{REPO_OWNER}/{REPO_NAME}")
 
-        # Check if the specified folder exists
-        folder_name = REPO_PATH  # You can modify this if you want to check a different folder
-        try:
-            repo.get_contents(folder_name)
-        except github.GithubException as e:
-            if e.status == 404:  # Folder does not exist
-                # Create an empty file to create the folder
-                repo.create_file(
-                    path=f"{folder_name}.gitkeep", 
-                    message="Create Configs folder", 
-                    content=base64.b64encode(b'').decode('utf-8')
-                )
-
+        # Get existing folders in the repository
         # Check if file already exists
         try:
-            repo.get_contents(f"{folder_name}{filename}")
+            existing_contents = repo.get_contents(REPO_PATH)
+            existing_folders = [content.name for content in existing_contents if content.type == 'dir']
+            repo.get_contents(f"{REPO_PATH}{filename}")
             return jsonify({"error": "File Name Taken, Rename To Upload"}), 409
         except github.GithubException as e:
+            existing_folders = []
+        # Extract folder name from filename (assuming filename includes full path)
+        folder_name = os.path.dirname(file_data['filename'])
+        # Check if folder already exists
+        if folder_name in existing_folders:
+            return jsonify({
+                "error": "Folder already exists", 
+                "message": "The folder already exists on GitHub. Skipping upload."
+            }), 409
             if e.status != 404:  # If error is not "file not found"
                 raise e
-
+        
         # Prepare file content
         content = base64.b64decode(file_data['content'])
 
         # Upload to GitHub
         repo.create_file(
-            path=f"{folder_name}{filename}", 
+            path=f"{REPO_PATH}{file_data['filename']}", 
+            message=f"Upload {file_data['filename']}", 
+            path=f"{REPO_PATH}{filename}", 
             message=f"Upload {filename}", 
             content=content
         )
 
+        return jsonify({"success": True, "message": f"Uploaded {file_data['filename']}"}), 200
         return jsonify({"success": True, "message": f"Uploaded {filename}"}), 200
 
     except Exception as e:
