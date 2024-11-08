@@ -32,14 +32,14 @@ def upload_to_github():
         g = github.Github(GITHUB_TOKEN)
         repo = g.get_repo(f"{REPO_OWNER}/{REPO_NAME}")
 
-        # Check if file already exists
+        # Check if folder already exists by attempting to list its contents
         try:
-            repo.get_contents(f"{REPO_PATH}{filename}")
-            return jsonify({"error": "File Name Taken, Rename To Upload"}), 409
+            repo.get_contents(REPO_PATH)
+            return jsonify({"error": "Folder already exists. Upload skipped."}), 409
         except github.GithubException as e:
-            if e.status != 404:  # If error is not "file not found"
+            if e.status != 404:  # If error is not "folder not found"
                 raise e
-        
+
         # Prepare file content
         content = base64.b64decode(file_data['content'])
 
