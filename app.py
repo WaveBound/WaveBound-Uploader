@@ -11,7 +11,7 @@ CORS(app)
 GITHUB_TOKEN = os.environ.get('GITHUB_TOKEN')
 REPO_OWNER = "WaveBound"
 REPO_NAME = "WaveBound_Configs"
-REPO_PATH = "Configs/"
+REPO_PATH = "Configs/"  # This is the folder where files will be uploaded
 
 @app.route('/upload', methods=['POST'])
 def upload_to_github():
@@ -32,20 +32,33 @@ def upload_to_github():
         g = github.Github(GITHUB_TOKEN)
         repo = g.get_repo(f"{REPO_OWNER}/{REPO_NAME}")
 
+        # Check if the specified folder exists
+        folder_name = REPO_PATH  # You can modify this if you want to check a different folder
+        try:
+            repo.get_contents(folder_name)
+        except github.GithubException as e:
+            if e.status == 404:  # Folder does not exist
+                # Create an empty file to create the folder
+                repo.create_file(
+                    path=f"{folder_name}.gitkeep", 
+                    message="Create Configs folder", 
+                    content=base64.b64encode(b'').decode('utf-8')
+                )
+
         # Check if file already exists
         try:
-            repo.get_contents(f"{REPO_PATH}{filename}")
+            repo.get_contents(f"{folder_name}{filename}")
             return jsonify({"error": "File Name Taken, Rename To Upload"}), 409
         except github.GithubException as e:
             if e.status != 404:  # If error is not "file not found"
                 raise e
-        
+
         # Prepare file content
         content = base64.b64decode(file_data['content'])
 
         # Upload to GitHub
         repo.create_file(
-            path=f"{REPO_PATH}{filename}", 
+            path=f"{folder_name}{filename}", 
             message=f"Upload {filename}", 
             content=content
         )
