@@ -70,6 +70,7 @@ def upload_to_github():
         return jsonify({"success": True, "message": f"Uploaded {filename}"}), 200
     
     except Exception as e:
+        print(f"An error occurred: {str(e)}")  # Log the error to the console
         return jsonify({"error": str(e)}), 500
 
 @app.route('/')
