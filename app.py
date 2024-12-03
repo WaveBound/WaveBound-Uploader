@@ -23,10 +23,12 @@ def upload_to_github():
         if not all(key in file_data for key in ['filename', 'content']):
             return jsonify({"error": "Missing required fields"}), 400
 
-        # Check if file is JSON
+        # Check if file is JSON or image
         filename = file_data['filename']
-        if not filename.lower().endswith('.json'):
-            return jsonify({"error": "Only JSON files are allowed"}), 400
+        allowed_extensions = ('.json', '.png', '.jpg', '.jpeg')
+        if not filename.lower().endswith(allowed_extensions):
+            return jsonify({"error": "Only JSON and image files are allowed"}), 400
+
 
         # Initialize GitHub connection
         g = github.Github(GITHUB_TOKEN)
